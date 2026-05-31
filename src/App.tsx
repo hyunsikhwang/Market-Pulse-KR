@@ -192,43 +192,30 @@ export default function App() {
         </div>
 
         {/* Movers & Sentiment Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+        <div className="mb-4">
           <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">
             Movers & Sentiment
           </h2>
-          <div className="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-lg shadow-sm">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 block sm:inline">Top N:</span>
-            {[5, 10, 20].map((num) => (
-              <button
-                key={num}
-                onClick={() => setTopN(num)}
-                className={cn(
-                  "px-2.5 py-1 text-[11px] font-black rounded-md transition-all active:scale-95 cursor-pointer",
-                  topN === num 
-                    ? "bg-slate-900 text-white shadow-sm" 
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                )}
-              >
-                {num}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Summary Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
           <MoversPanel 
-            title={`상승률 Top ${topN}`} 
+            title="상승률" 
             data={gainers} 
             type="gainers" 
             onStockClick={setSelectedStock} 
+            topN={topN}
+            onTopNChange={setTopN}
           />
           <SentimentGauges data={data} />
           <MoversPanel 
-            title={`하락률 Top ${topN}`} 
+            title="하락률" 
             data={losers} 
             type="losers" 
             onStockClick={setSelectedStock} 
+            topN={topN}
+            onTopNChange={setTopN}
           />
         </div>
 

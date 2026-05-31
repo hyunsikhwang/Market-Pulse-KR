@@ -102,9 +102,17 @@ async function startServer() {
           isRegularSession
         }
       });
-    } catch (error) {
-      console.error("API Error:", error);
-      res.status(500).json({ error: "Failed to fetch stock data" });
+    } catch (error: any) {
+      console.error("API Error details:", error.message, error.stack);
+      if (error.response) {
+        console.error("Axios response error data:", error.response.status, error.response.data);
+      }
+      res.status(500).json({ 
+        error: "Failed to fetch stock data", 
+        message: error.message,
+        stack: error.stack,
+        details: error.response ? { status: error.response.status, data: error.response.data } : "No response data"
+      });
     }
   });
 
