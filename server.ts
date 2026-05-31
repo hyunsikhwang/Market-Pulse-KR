@@ -19,9 +19,44 @@ async function startServer() {
       const [hours, minutes] = seoulTime.split(":").map(Number);
       const timeInMinutes = hours * 60 + minutes;
       
-      // 09:00 (540) to 15:00 (900)
-      const isRegularSession = timeInMinutes >= 540 && timeInMinutes <= 900;
-      const tradeType = isRegularSession ? "KRX" : "NXT";
+      // Day of Week in Seoul
+      let dayOfWeek = 1;
+      try {
+        dayOfWeek = Number(formatInTimeZone(now, "Asia/Seoul", "i"));
+      } catch (e) {
+        // Fallback calculation for Seoul timezone (UTC+9)
+        const utcDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+        dayOfWeek = utcDate.getUTCDay(); // 0 (Sun) to 6 (Sat)
+        if (dayOfWeek === 0) dayOfWeek = 7;
+      }
+      const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+      
+      // KRX Market Hours: weekdays 09:00 ~ 15:30 (540 ~ 930 minutes)
+      const isKrxOpen = isWeekday && timeInMinutes >= 540 && timeInMinutes <= 930;
+      
+      // NXT Market Hours: weekdays 08:00 ~ 20:00 (480 ~ 1200 minutes)
+      const isNxtOpen = isWeekday && timeInMinutes >= 480 && timeInMinutes <= 1200;
+      
+      let tradeType: "KRX" | "NXT" = "KRX";
+      let marketLabel = "KRX 정규장";
+      let isRegularSession = false;
+      
+      if (isKrxOpen && isNxtOpen) {
+        // KRX 와 NXT 가 동시에 열려있을 때는 KRX
+        tradeType = "KRX";
+        marketLabel = "KRX 정규장";
+        isRegularSession = true;
+      } else if (!isKrxOpen && isNxtOpen) {
+        // KRX 가 closed 되고 NXT 만 열려있을 땐 NXT
+        tradeType = "NXT";
+        marketLabel = "NXT 장외";
+        isRegularSession = false;
+      } else {
+        // 둘 다 closed 상태일 때는 KRX 기준으로 조회
+        tradeType = "KRX";
+        marketLabel = "KRX (종가)";
+        isRegularSession = false;
+      }
 
       const url = `https://stock.naver.com/api/domestic/market/stock/default?tradeType=${tradeType}&marketType=${marketType}&orderType=marketSum&startIdx=0&pageSize=${pageSize}`;
       
@@ -62,7 +97,7 @@ async function startServer() {
         data: normalizedData,
         meta: {
           tradeType,
-          marketLabel: isRegularSession ? "KRX 정규장" : "NXT 장외",
+          marketLabel,
           timestamp: formatInTimeZone(now, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss"),
           isRegularSession
         }

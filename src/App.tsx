@@ -21,6 +21,7 @@ export default function App() {
     key: keyof StockData | 'range52w' | null;
     direction: 'asc' | 'desc' | null;
   }>({ key: null, direction: null });
+  const [topN, setTopN] = useState<number>(() => Number(localStorage.getItem("topn_pref")) || 5);
 
   const fetchData = async () => {
     setLoading(true);
@@ -46,7 +47,8 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("market_pref", marketType);
     localStorage.setItem("size_pref", pageSize.toString());
-  }, [marketType, pageSize]);
+    localStorage.setItem("topn_pref", topN.toString());
+  }, [marketType, pageSize, topN]);
 
   const handleSort = (key: keyof StockData | 'range52w') => {
     setSortConfig((prev) => {
@@ -94,14 +96,14 @@ export default function App() {
     )
   ).slice(0, pageSize);
 
-  const gainers = [...filteredData]
+  const gainers = [...data]
     .filter(item => (item.changeRate ?? 0) > 0)
     .sort((a, b) => (b.changeRate ?? 0) - (a.changeRate ?? 0))
-    .slice(0, 5);
-  const losers = [...filteredData]
+    .slice(0, topN);
+  const losers = [...data]
     .filter(item => (item.changeRate ?? 0) < 0)
     .sort((a, b) => (a.changeRate ?? 0) - (b.changeRate ?? 0))
-    .slice(0, 5);
+    .slice(0, topN);
 
   return (
     <div className="min-h-screen p-6">
@@ -189,11 +191,45 @@ export default function App() {
           </div>
         </div>
 
+        {/* Movers & Sentiment Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+          <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">
+            Movers & Sentiment
+          </h2>
+          <div className="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-lg shadow-sm">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 block sm:inline">Top N:</span>
+            {[5, 10, 20].map((num) => (
+              <button
+                key={num}
+                onClick={() => setTopN(num)}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-black rounded-md transition-all active:scale-95 cursor-pointer",
+                  topN === num 
+                    ? "bg-slate-900 text-white shadow-sm" 
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                )}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Summary Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <MoversPanel title="상승률 Top 5" data={gainers} type="gainers" />
+          <MoversPanel 
+            title={`상승률 Top ${topN}`} 
+            data={gainers} 
+            type="gainers" 
+            onStockClick={setSelectedStock} 
+          />
           <SentimentGauges data={data} />
-          <MoversPanel title="하락률 Top 5" data={losers} type="losers" />
+          <MoversPanel 
+            title={`하락률 Top ${topN}`} 
+            data={losers} 
+            type="losers" 
+            onStockClick={setSelectedStock} 
+          />
         </div>
 
         {/* Data Table */}
